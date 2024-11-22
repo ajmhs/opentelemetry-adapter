@@ -11,7 +11,7 @@
 #   docker build -t connext:oteladapter -f docker/Dockerfile --build-arg RTI_LICENSE_AGREEMENT_ACCEPTED=accepted --build-arg CONNEXT_VERSION=7.3.0 .
 #
 # To run the Docker container, run the following command:
-#   docker run -it --rm connext:oteladapter
+#   docker run -it --rm --net=host -v $RTI_LICENSE_FILE:/root/rti_license.dat connext:oteladapter 
 #
 #   The -it option is used to run the container in interactive mode.
 #   The --rm option is used to remove the container when it exits.
@@ -65,6 +65,8 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists
 
+# TODO: remove the default licence file and provide a symlink to the bind-mounted file    
+
 WORKDIR /root
 
 # Copy the source code
@@ -88,12 +90,20 @@ RUN cmake --build .
 RUN cmake --install . --prefix /root/opentelemetry-adapter/otel-cpp
 
 WORKDIR /root/opentelemetry-adapter
+# TODO: fix the error in otel-cpp/lib/cmake/opentelemetry-cpp/opentelemetry-cpp-config.cmake at line ~122
 
 # Build the source code
 #RUN mkdir build && cd build && cmake .. && cmake --build .
-     
+
+# Configure licence file
+RUN echo "export RTI_LICENSE_FILE=/root/rti_license.dat" >> /root/.bashrc
+RUN rm ${NDDSHOME}/rti_license.dat
+RUN ln -s /root/rti_licence.dat ${NDDSHOME}/rti_license.dat
+
+# Tweaks
 RUN echo "source ${NDDSHOME}/resource/scripts/rtisetenv_*.bash" >> /root/.bashrc
 RUN echo 'mkcd() { mkdir -p "$1" && cd "$1"; }' >> /root/.bashrc
+
 FROM scratch AS final-stage
 
 WORKDIR /root
