@@ -1,4 +1,6 @@
-# OpenTelemetry Gateway
+# OpenTelemetry Adapter
+
+TODO: Finish this file, it will become the basis of the case+code
 
 ## Overview
 The OpenTelemetry Gateway is a service that collects, processes, and exports telemetry data from a DDS Topic. It is designed to be highly scalable and flexible, supporting multiple backends and data formats.
@@ -11,15 +13,30 @@ The OpenTelemetry Gateway is a service that collects, processes, and exports tel
 
 
 ## Installation
-To install the OpenTelemetry Gateway, follow these steps:
+To install the OpenTelemetry Adapter, follow these steps:
+
+Install the library, or a symlink to the library in one of the paths used by ld.
+To view the paths, try running 
+```bash
+ld --verbose | grep SEARCH_DIR | tr -s ' ;' \\012
+```
+Usually 
+```bash
+cd /usr/local/lib
+sudo ln -s {path to liobrary}
+```
+will be sufficient
+
+
+
 
 1. Clone the repository:
     ```bash
-    git clone https://github.com/ajmhs/opentelemetry_gateway.git
+    git clone https://github.com/ajmhs/opentelemetry_adapter.git
     ```
 2. Navigate to the project directory:
     ```bash
-    cd opentelemetry_gateway
+    cd opentelemetry_adapter
     ```
 3. Install dependencies:
     ```bash
@@ -28,6 +45,12 @@ To install the OpenTelemetry Gateway, follow these steps:
 
 ## Dependencies
 To install [OpenTelemetry C++](https://github.com/open-telemetry/opentelemetry-cpp) locally using CMake, following these steps:
+
+0. Install the pre-reqs for building opentelemetry with OTLP
+
+```bash
+apt install libcurlpp-dev
+```
 
 1. Clone the OpenTelemetry C++ GitHub repository to your local machine.
 
@@ -56,12 +79,12 @@ mkcd() { mkdir -p "$1" && cd "$1"; }
 4. In the build directory run CMake, to configure and generate the build system without enabling tests:
 
 ```bash
-cmake -DBUILD_TESTING=OFF ..
+cmake -DBUILD_TESTING=OFF -DWITH_PROMETHEUS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON ..
 ```
 
 Or, if the cmake --build fails, you can also try:
 ```bash
-cmake -DBUILD_TESTING=OFF -DWITH_ABSEIL=ON ..
+cmake -DBUILD_TESTING=OFF -DWITH_ABSEIL=ON -DWITH_PROMETHEUS=ON -DCMAKE_POSITION_INDEPENDENT_CODE=ON ..
 ```
 
 5. Execute the build process:
@@ -70,13 +93,18 @@ cmake -DBUILD_TESTING=OFF -DWITH_ABSEIL=ON ..
 cmake --build .
 ```
 
-6. Install OpenTelemetry C++ in this directory (opentelemetry_gateway)
+6. Install OpenTelemetry C++ in this directory (opentelemetry_adapter)
 
 ```bash
-cmake --install . --prefix ../../opentelemetry_gateway
+cmake --install . --prefix ../../opentelemetry_adapter/otel-cpp
 ```
 
 ## Building
+```bash
+mkcd build
+cmake ..
+cmake --build .
+```
 
 
 ## Usage
@@ -86,22 +114,33 @@ npm start
 ```
 
 ## Configuration
+Add a new job to the Observability platform's prometheus configuration in {$HOME}/rti_workspace/7.3.0/user_config/observability/prometheus/prometheus.yml
+
 Configuration options can be set in the `config.json` file. Below is an example configuration:
-```json
-{
-  "collector": {
-    "enabled": true,
-    "endpoint": "http://localhost:4317"
-  },
-  "processor": {
-    "batch_size": 100,
-    "timeout": 5000
-  },
-  "exporter": {
-    "backend": "prometheus",
-    "endpoint": "http://localhost:9090"
-  }
-}
+```yaml
+scrape_configs:
+  #
+  # Configuration for Prometheus exporter in a system
+  #      
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  #
+  - job_name: 'prometheus'
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+    - targets: 
+      - localhost:9090 # Prometheus metrics
+      
+  - job_name: 'routing_service'      
+    static_configs:
+    - targets:
+      - localhost:9464 # Application metrics provided by the routing service adapter
+```
+Save and (re)start the observability platform:
+```bash
+rtiobservability -t && rtiobservability -i
 ```
 
 ## Contributing
