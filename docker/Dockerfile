@@ -65,8 +65,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists
 
-# TODO: remove the default licence file and provide a symlink to the bind-mounted file    
-
 WORKDIR /root
 
 # Copy the source code
@@ -90,10 +88,9 @@ RUN cmake --build .
 RUN cmake --install . --prefix /root/opentelemetry-adapter/otel-cpp
 
 WORKDIR /root/opentelemetry-adapter
-# TODO: fix the error in otel-cpp/lib/cmake/opentelemetry-cpp/opentelemetry-cpp-config.cmake at line ~122
 
 # Build the source code
-#RUN mkdir build && cd build && cmake .. && cmake --build .
+RUN mkdir build && cd build && cmake .. && cmake --build .
 
 # Configure licence file
 RUN echo "export RTI_LICENSE_FILE=/root/rti_license.dat" >> /root/.bashrc
@@ -103,6 +100,8 @@ RUN ln -s /root/rti_licence.dat ${NDDSHOME}/rti_license.dat
 # Tweaks
 RUN echo "source ${NDDSHOME}/resource/scripts/rtisetenv_*.bash" >> /root/.bashrc
 RUN echo 'mkcd() { mkdir -p "$1" && cd "$1"; }' >> /root/.bashrc
+COPY src/run.sh /root/opentelemetry-adapter/build/
+RUN chmod +x /root/opentelemetry-adapter/build/run.sh
 
 FROM scratch AS final-stage
 
