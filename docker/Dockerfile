@@ -102,8 +102,6 @@ RUN ln -s /root/rti_licence.dat ${NDDSHOME}/rti_license.dat
 RUN echo "source ${NDDSHOME}/resource/scripts/rtisetenv_*.bash" >> /root/.bashrc
 RUN echo 'mkcd() { mkdir -p "$1" && cd "$1"; }' >> /root/.bashrc
 
-# TODO Create and copy tmux script as per the readme
-
 FROM scratch AS final-stage
 
 WORKDIR /root
