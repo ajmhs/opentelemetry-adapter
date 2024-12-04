@@ -92,6 +92,7 @@ target_include_directories(generator
 connextdds_copy_files(
     INPUT_FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/src/RsTelemetryGateway.xml"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/run_tmux.sh"
         "${CMAKE_CURRENT_SOURCE_DIR}/generator/c++11/generator_qos.xml"
     OUTPUT_DIR
         "${CMAKE_CURRENT_BINARY_DIR}/"
