@@ -35,7 +35,7 @@
 
     <routing_service name="OpenTelemetryGateway">
         <domain_route name="DDSOtel">
-            <!-- Define a single MongoDB connection to a specific cluster and database -->
+            <!-- Define the url exposed for Prometheus to scrape from -->
             <connection name="OpenTelemetryConnection" plugin_name="AdapterLib::OpenTelemetryAdapter">
                 <property>
                     <value>

@@ -42,6 +42,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
     libcurlpp-dev \
     zlib1g-dev \
     nano \
+    tmux \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists
 
@@ -77,8 +78,8 @@ COPY src /root/opentelemetry-adapter/src
 COPY CMakeLists.txt /root/opentelemetry-adapter/
 
 
-# Clone the opentelemetry-cpp and build
-RUN git clone https://github.com/open-telemetry/opentelemetry-cpp.git
+# Clone the opentelemetry-cpp v1.18.0 branch without history and build
+RUN git clone --depth 1 --branch v1.18.0 https://github.com/open-telemetry/opentelemetry-cpp.git
 WORKDIR /root/opentelemetry-cpp
 RUN git submodule update --init --recursive third_party/prometheus-cpp
 RUN mkdir -p /root/opentelemetry-cpp/build 
@@ -100,8 +101,6 @@ RUN ln -s /root/rti_licence.dat ${NDDSHOME}/rti_license.dat
 # Tweaks
 RUN echo "source ${NDDSHOME}/resource/scripts/rtisetenv_*.bash" >> /root/.bashrc
 RUN echo 'mkcd() { mkdir -p "$1" && cd "$1"; }' >> /root/.bashrc
-COPY src/run.sh /root/opentelemetry-adapter/build/
-RUN chmod +x /root/opentelemetry-adapter/build/run.sh
 
 FROM scratch AS final-stage
 
