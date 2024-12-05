@@ -28,7 +28,7 @@ By the end, you'll have a robust solution for monitoring both DDS system perform
 To clone the repository you will need to run git clone as follows to download both the repository and its submodule dependencies:
 
 ```bash
-git clone --recurse-submodule https://github.com/rticommunity/rticonnextdds-usecases-tsn-arch-sim.git
+git clone --recurse-submodule https://github.com/ajmhs/opentelemetry-adapter.git
 ```
 
 If you forget to clone the repository with --recurse-submodule, simply run the following command to pull all the dependencies:
@@ -126,7 +126,7 @@ This module encapsulates all the metric-related types and definitions. In OpenTe
 
 ## Adapter
 
-A Routing Service adapter is a pluggable component in RTI Routing Service that enables the service to interact with different data domains. These adapters are designed to consume and produce data from various sources, such as DDS, MQTT, sockets, files, and more. They act as a bridge between the Routing Service and the specific data domain, allowing data to flow seamlessly between them.
+A Routing Service adapter is a pluggable component in the RTI Routing Service that enables the service to interact with different data domains. These adapters are designed to consume and produce data from various sources, such as DDS, MQTT, sockets, files, and more. They act as a bridge between the Routing Service and the specific data domain, allowing data to flow seamlessly between them.
 
 Adapters are responsible for:
 * Input Adapters: Collecting data samples from a data domain and passing them to the Routing Service engine.
@@ -141,17 +141,12 @@ The first step is to initialize and configure the Prometheus Exporter in the ada
 
 ## Configuration of the routing service
 
-TODO: This is the raw chatbot output, needs editing fr clarity, brevity, style
+The included Routing Service configuration is an XML file that defines a setup for integrating OpenTelemetry with RTI Connext DDS. It sets up an RTI Routing Service instance named `OpenTelemetryGateway` to integrate with OpenTelemetry using a the adapter plugin. It defines:
+- Configuration variables for scraping metrics and enabling debug logging.
+- A plugin library (`AdapterLib`) with an adapter plugin (`OpenTelemetryAdapter`) for OpenTelemetry integration.
+- A domain route (`DDSOtel`) with a connection (`OpenTelemetryConnection`) that uses the adapter plugin.
 
-
-The provided Routing Service configuration is an XML file that defines a setup for integrating OpenTelemetry with RTI Connext DDS. Below is an annotated explanation of the configuration:
-
----
-
-### **Root Element: `<dds>`**
-- **Namespace and Schema**:
-  - The `xmlns:xsi` attribute specifies the XML Schema Instance namespace.
-  - The `xsi:noNamespaceSchemaLocation` attribute points to the schema definition for RTI Routing Service version 7.3.0. This ensures the XML adheres to the expected structure and syntax.
+This setup is designed to enable the collection and export of telemetry data from RTI Connext DDS to Prometheus.
 
 ---
 
@@ -160,7 +155,7 @@ This section defines variables that can be used throughout the configuration.
 
 1. **`SCRAPE_URL`**:
    - **Value**: `0.0.0.0:9464`
-   - **Purpose**: Specifies the URL where metrics can be scraped. This is likely used for exposing metrics in a Prometheus-compatible format, as is common in OpenTelemetry setups.
+   - **Purpose**: Specifies the URL where metrics can be scraped. This is used for exposing metrics in a Prometheus-compatible format.
 
 2. **`EXPORT_DEBUG`**:
    - **Value**: `true`
@@ -194,119 +189,69 @@ This section defines the Routing Service instance.
 
 3. **Connection: `<connection>`**
    - **`name="OpenTelemetryConnection"`**: The name of the connection.
-   - **`plugin_name="AdapterLib::OpenTelemetryAdapter"`**: Specifies the plugin to use for this connection. It references the `OpenTelemetryAdapter` defined earlier.
+   - **`plugin_name="AdapterLib::OpenTelemetryAdapter"`**: Specifies the plugin to use for this connection. It references the `OpenTelemetryAdapter` previously defined.
 
    **Purpose**: This connection establishes the link between DDS and OpenTelemetry, enabling data to flow between the two systems.
-
----
-
-### **Summary**
-This configuration sets up an RTI Routing Service instance named `OpenTelemetryGateway` to integrate with OpenTelemetry using a custom adapter plugin. It defines:
-- Configuration variables for scraping metrics and enabling debug logging.
-- A plugin library (`AdapterLib`) with an adapter plugin (`OpenTelemetryAdapter`) for OpenTelemetry integration.
-- A domain route (`DDSOtel`) with a connection (`OpenTelemetryConnection`) that uses the adapter plugin.
-
-This setup is designed to enable the collection and export of telemetry data from RTI Connext DDS to OpenTelemetry-compatible systems, such as Prometheus.
 
 
 ## Generator
 
-TODO:
+The generator is a basic Connext application that publishes random data for each metric type supported by the adapter: counter, histogram, and up-down counter. It cycles through these types, assigning random values or initializing from a random starting point.  
 
-* What is the generator for?
-* How to run it?
+This enables testing of various metric types while providing the adapter with data to validate Prometheus and Grafana configurations seamlessly.
+
+### Running the generator
+
+The generator needs a Quality of Service file defined to execute. All the other parameters, such as domain, sample count and verbosity will default to predefined values.
+
+    -d, --domain       <int>   Domain ID this application will
+                               subscribe in.  
+                               Default: 2
+    -q, --qos_file     <str>   XML file containing QoS profiles
+                               for the application.  
+                               Required: True
+    -s, --sample_count <int>   Number of samples to receive before
+                               cleanly shutting down. 
+                               Default: infinite
+    -v, --verbosity    <int>   How much debugging output to show.
+                               Range: 0-3 
+                               Default: 1
+
+
+From a docker container terminal window, change directory to ```/root/opentelemetry-adapter/build``` and run ```./generator -d 2 -q generator_qos.xml``` 
 
 ## Running the RTI Routing Service with the opentelemetry plugin
-rtiroutingservice -cfgFile ./RsTelemetryGateway.xml -cfgName "OpenTelemetryGateway"
+
+From a docker container terminal window, change directory to ```/root/opentelemetry-adapter/build``` and run ```rtiroutingservice -cfgFile ./RsTelemetryGateway.xml -cfgName "OpenTelemetryGateway"```
+
+This command is used to start the RTI Routing Service with the included configuration file and specific configuration name. 
+
+Here's a breakdown of the command:
+
+```rtiroutingservice``` is the executable for the RTI Routing Service. It is used to start the service.
+
+```-cfgFile```  specifies the XML configuration file to use for the Routing Service, in this case ```./RsTelemetryGateway.xml``` which is the included configuration and contains the configuration for the Routing Service, including domain routes, connections, and plugins. 
+
+```-cfgName "OpenTelemetryGateway"``` starts the RTI Routing Service using the named configuration defined in the RsTelemetryGateway.xml file, specifically the configuration named OpenTelemetryGateway within that file. 
 
 
+## Running the router+generator at the same time using tmux
 
-## Running the router+generator at the same time using TMUX
+To facilitate running two commands at the same time in a terminal window, the docker container includes **[tmux](https://github.com/tmux/tmux/wiki)** and a script which will start tmux, create two windows and run the routing service in the first (window 0), and the generator in the second (window 1). 
 
-
-
-
-https://ryan.himmelwright.net/post/scripting-tmux-workspaces/
-
+### Starting the tmux session
+From a docker container terminal window, change directory to ```/root/opentelemetry-adapter/build``` and execute ```./run_tmux.sh```
 
 
+### Switching between the windows
+- To **switch** the tmux window, press `Ctrl-b` followed by the window number: `0` for the Routing Service, `1` for the generator.
 
-Certainly! Here's a step-by-step guide to run two terminal applications simultaneously using a split screen in **tmux**:
-
-
-
-
----
-
-### **1. Start tmux**
-Open a terminal and start a tmux session by running:
-
-```bash
-tmux
-```
-
----
-
-### **2. Split the Screen**
-You can split the tmux window into panes:
-
-- **Horizontally** (one above the other):  
-  Press `Ctrl-b` followed by `%`.
-  
-- **Vertically** (side-by-side):  
-  Press `Ctrl-b` followed by `"`.
-
----
-
-### **3. Run Applications in Each Pane**
-Once you have split the screen:
-1. Move between panes using `Ctrl-b` and the arrow keys.
-2. In each pane, you can run a terminal application or command. For example:
-   - In one pane, run `top` to monitor system processes.
-   - In the other pane, run `htop`, `ping`, or any other terminal application.
-
----
-
-### **4. Resize Panes (Optional)**
-You can resize the panes to adjust their sizes:
-- Press `Ctrl-b` followed by `Ctrl-arrow key` to resize the pane in the direction of the arrow key.
-
----
-
-### **5. Exit or Detach the Session**
+### Exit or Detach from the session
 - To **detach** the tmux session and leave it running in the background, press `Ctrl-b` followed by `d`.
-- To **exit** a pane, type `exit` in the pane.
+- To **exit** a window, type `exit` in the window.
 
----
-
-### **Example Workflow**
-1. Start tmux:
-   ```bash
-   tmux
-   ```
-2. Split the screen vertically:
-   Press `Ctrl-b` then `%`.
-3. In the left pane, run:
-   ```bash
-   htop
-   ```
-4. Move to the right pane using `Ctrl-b` and the right arrow key.
-5. In the right pane, run:
-   ```bash
-   tail -f /var/log/syslog
-   ```
-
-Now you can monitor system processes and logs side by side!
-
----
-
-### **6. Reattach tmux (if Detached)**
-If you detach from the session, you can reattach it using:
-
-```bash
-tmux attach
-``` 
-
+### Reattaching to the session
+- To **attach** the tmux session either re-run the ```run_tmux.sh``` script or type ```tmux attach -t OtelAdapter```.
 
 
 ## Configuration of Prometheus
@@ -339,7 +284,7 @@ scrape_configs:
   - job_name: 'routing_service'      
     static_configs:
     - targets:
-      - localhost:9464 # Application metrics provided by the routing service adapter
+      - localhost:9464 # Application metrics provided by the routing service adapter - must match the url defined in the adapter configuration
 ```
 Save and (re)start the observability platform:
 ```bash
@@ -355,34 +300,30 @@ Clicking on the Endpoint, will open the webpage, hosted by the adapter showing t
 
 ## Grafana
 
-Certainly! Here’s a step-by-step guide and an example of adding Prometheus-provided metrics to a Grafana dashboard.
+Here’s a step-by-step guide and an example of adding Prometheus-provided metrics to a Grafana dashboard.
 
 ---
 
-### **Step 1: Set Up Grafana with Prometheus as a Data Source**
-1. **Login to Grafana**: Open Grafana in your browser and log in.
-2. **Add Prometheus as a Data Source**:
-   - Go to **Configuration > Data Sources**.
-   - Click **Add data source** and select **Prometheus**.
-   - Enter the URL for your Prometheus server (e.g., `http://localhost:9090`) and save.
+### **Step 1: Login to Grafana**
+Open Grafana in your browser, if you are using the RTI Observability Framework, the address should be http://localhost:3000/ and log in.
 
 ---
 
 ### **Step 2: Create a New Dashboard**
 1. In the Grafana menu, click **Dashboards > New Dashboard**.
-2. Choose **Add a new panel**.
+2. Choose **Add visualization**.
 
 ---
 
 ### **Step 3: Query Prometheus for Metrics**
 1. In the **Query** section of the panel editor:
    - Set the **Data Source** to Prometheus.
-   - Enter your Prometheus query in the **Metric** field (e.g., `http_requests_total`).
+   - Enter your Prometheus query in the **Metric** field or open the **Metrics Explorer** (e.g., all the generator metrics start with the name `rti_example`).
    - Click **Run Query** to see the result preview.
    
    Example Prometheus Queries:
-   - **`http_requests_total`**: Total number of HTTP requests.
-   - **`rate(http_requests_total[1m])`**: Per-second rate of HTTP requests over the last minute.
+   - **`prometheus_http_requests_total`**: Total number of HTTP requests.
+   - **`rate(rti_example_double_counter_Micro_Fortnight_total[1m])`**: Per-second rate of Micro-Fortnights provided by the generator over the last minute.
    - **`up`**: Checks whether a target is up and running.
 
 ---
@@ -401,38 +342,11 @@ Certainly! Here’s a step-by-step guide and an example of adding Prometheus-pro
 2. Save the dashboard with a meaningful name.
 
 
-TODO: Mention the caveat about the dashboards - if the docker container is destroyed then the work done in configuration here is lost.
----
+WARNING: If the Observability Framework is removed, ie by running ```rtiobservability -d```,  this removes all changes to your current Observability Framework Docker environment including:
 
-### **Example: Add HTTP Request Rate to a Dashboard**
-Here’s an example of adding a metric to display the per-second rate of HTTP requests:
-
-1. **Prometheus Query**:  
-   ```promql
-   rate(http_requests_total[1m])
-   ```
-   This query calculates the per-second rate of HTTP requests over the last minute.
-
-2. **Visualization**:  
-   - Choose **Time series** for a graph over time.
-   - Set the Y-axis unit to **requests/second**.
-
-3. **Thresholds**:  
-   Add thresholds to indicate acceptable, warning, and critical request rates (e.g., green for <100, yellow for 100-200, red for >200).
-
----
-
-### **Displaying Multiple Metrics**
-To display multiple metrics on a single graph or panel:
-1. Add additional queries in the **Query** section by clicking **Add Query**.
-2. Configure each query individually and adjust the legend to differentiate them.
-
-For example, you could plot both `rate(http_requests_total[1m])` and `rate(errors_total[1m])` to compare request and error rates.
-
----
-
-### **Conclusion**
-This process lets you integrate Prometheus metrics into Grafana dashboards, providing powerful visualizations to monitor your systems. You can further customize dashboards with alerts, annotations, and drill-down panels.
+* metric data in Prometheus
+* log data in Loki
+* **all Grafana user and dashboard configurations**
 
 ## License
 See the [LICENSE](LICENSE) file for details.

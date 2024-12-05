@@ -114,12 +114,18 @@ void PublishDoubleHistogram(dds::pub::DataWriter< ::Metrics::Metric> &writer, co
 
 void PublishUInt64UpDownCounter(dds::pub::DataWriter< ::Metrics::Metric> &writer, const int counter) {
     
+    int64_t val = counter;
+    if (counter % 2 == 0)
+        val = val - distribution(twister);
+    else
+        val = val + distribution(twister);
+    
     ::Metrics::Metric metric;
     metric.name("rti.example.uint64.updowncounter");
     metric.description("Example UInt64 UpDownCounter");
     metric.unit("Sheppey");    
     metric.data()._d(MetricTypes::UInt64UpDownCounter);
-    metric.data().uint64_updown_counter().value(INT_MAX - counter);
+    metric.data().uint64_updown_counter().value(val);
     writer.write(metric);
     
     std::cout << "Wrote: " << metric << std::endl;
@@ -127,12 +133,18 @@ void PublishUInt64UpDownCounter(dds::pub::DataWriter< ::Metrics::Metric> &writer
 
 void PublishDoubleUpDownCounter(dds::pub::DataWriter< ::Metrics::Metric> &writer, const int counter) {
     
+    double val = (distribution(twister) / 1000) + (double)counter;
+    if (counter % 2 == 0)
+        val = val - distribution(twister);
+    else
+        val = val + distribution(twister);
+
     ::Metrics::Metric metric;
     metric.name("rti.example.double.updowncounter");
     metric.description("Example Double UpDownCounter");
     metric.unit("Muggeseggele");
     metric.data()._d(MetricTypes::DoubleUpDownCounter);
-    metric.data().double_updown_counter().value(INT_MAX - (distribution(twister) / 1000));
+    metric.data().double_updown_counter().value(val);
     writer.write(metric);
     
     std::cout << "Wrote: " << metric << std::endl;
