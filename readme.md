@@ -300,9 +300,8 @@ Clicking on the Endpoint, will open the webpage, hosted by the adapter showing t
 
 ## Grafana
 
-Here’s a step-by-step guide and an example of adding Prometheus-provided metrics to a Grafana dashboard.
+Here’s a step-by-step guide and an example of adding Prometheus-provided metrics to a Grafana dashboard. There are some very helpful tutorials on the [Grafana website](https://grafana.com/tutorials/):
 
----
 
 ### **Step 1: Login to Grafana**
 Open Grafana in your browser, if you are using the RTI Observability Framework, the address should be http://localhost:3000/ and log in.
@@ -341,12 +340,15 @@ Open Grafana in your browser, if you are using the RTI Observability Framework, 
 1. Once you’re satisfied with the configuration, click **Apply**.
 2. Save the dashboard with a meaningful name.
 
+---
 
 WARNING: If the Observability Framework is removed, ie by running ```rtiobservability -d```,  this removes all changes to your current Observability Framework Docker environment including:
 
 * metric data in Prometheus
 * log data in Loki
 * **all Grafana user and dashboard configurations**
+
+
 
 ## License
 See the [LICENSE](LICENSE) file for details.
